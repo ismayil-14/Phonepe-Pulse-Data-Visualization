@@ -1,5 +1,16 @@
 # Phonepe-Pulse-Data-Visualization
 
+Overview:
+
+The PhonePe Pulse Dashboard Project is designed to transform complex data into insightful, interactive, and visually appealing visualizations. Our goal is to leverage the extensive data available in the PhonePe Pulse GitHub repository to create a user-friendly dashboard that provides valuable insights and information.
+
+We start by efficiently fetching and cloning data from the GitHub repository. Using Python and libraries like Pandas, we clean and preprocess the data to make it suitable for analysis and visualization. The cleaned data is then stored in a MySQL database for efficient retrieval and management.
+
+With Streamlit and Plotly, we build an interactive dashboard that showcases the data on a geo map and provides multiple dropdown options for users to explore various facts and figures. The dashboard dynamically fetches data from the MySQL database, ensuring real-time updates.
+
+Our dashboard offers an intuitive interface, making it easy for users to navigate and explore the data. Accessible from any web browser, it provides meaningful insights and information, making it a powerful tool for data analysis and decision-making.
+
+
 Approach:
 
 Data extraction: Clone the Github using scripting to fetch the data from the Phonepe pulse Github repository and store it in a suitable format such as CSV or JSON.
