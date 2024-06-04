@@ -19,13 +19,11 @@ st.title("PhonePe Project")
 
 
 
-tab0,tab1,tab2= st.tabs(["Home","Transactions ", "Users "])
+tab0,tab1,tab2,tab3= st.tabs(["Home","Transactions ", "Users ","Insights"])
 
 with tab0:
     st.header("Home Page")
-
-
-    st.write("## Overview")
+    
     st.write("The PhonePe Pulse Dashboard Project is designed to transform complex data into insightful, interactive, and visually appealing visualizations. Our goal is to leverage the extensive data available in the PhonePe Pulse GitHub repository to create a user-friendly dashboard that provides valuable insights and information.")
     st.write("We start by efficiently fetching and cloning data from the GitHub repository. Using Python and libraries like Pandas, we clean and preprocess the data to make it suitable for analysis and visualization. The cleaned data is then stored in a MySQL database for efficient retrieval and management.")
     st.write("With Streamlit and Plotly, we build an interactive dashboard that showcases the data on a geo map and provides multiple dropdown options for users to explore various facts and figures. The dashboard dynamically fetches data from the MySQL database, ensuring real-time updates.")
@@ -359,3 +357,153 @@ title=dict(x=0.5)  # Center the title
         query5 = f"""select Pincode as "Pincode" , sum(Pincode_users) as "Total Amount" from top_user_pincode where Year = {Ayear} and Quarter = {Aquarter} and State = '{Astate}' group by Pincode order by sum("User Count") desc limit 10;"""
         dataFrame5= pd.read_sql_query(query5,myconnection)
         st.table(dataFrame5)
+
+    with tab3:
+        st.title("Insights from data")
+        question_dict={'What insights can we gather from a specific state? ':1,
+                    'How has PhonePe\'s performance evolved over time and across various states?':2,
+                    'What is the relationship between transaction amounts, registered users, and transaction counts?':3,
+                    'Which transaction types have been most prevalent over the years?':4,
+                    'What are the average transaction metrics across different states?':5,
+                    'Which states are leading in total money transfers (present in a table)?' :6,
+                    'States having high as well as low transactions amount in a Transaction(limited to 7)':7,
+                    'States having high as well as low transactions amount by a User(limited to 7)':8,
+                    'What are the trends in user registrations over the years across different states?':9,
+                    'Which mobile brands are most popular among PhonePe users?':10 }
+        question=st.selectbox('Select the insight questions from phonepe data',question_dict.keys())
+        answer=question_dict.get(question)
+
+
+        if answer == 1:
+            st.header("Common Insights of a State")
+
+            st.write("### Analyze the trends and patterns in transaction amounts, transaction counts, and user registrations for a selected state over the years.")
+
+            state_insight = st.selectbox('Select State', tuple(states_name))
+            
+            query = f"""SELECT * FROM agg_transaction WHERE State = '{state_insight}'"""
+            state_data = pd.read_sql_query(query, myconnection)
+
+            st.write(f"## Insights for {state_insight}")
+
+            # Transaction Amount over Time
+            fig1 = px.line(state_data, x='Year', y='Transaction_amount', color='Quarter', title='Transaction Amount Over Time')
+            st.plotly_chart(fig1)
+
+            # Transaction Count over Time
+            fig2 = px.line(state_data, x='Year', y='Transaction_count', color='Quarter', title='Transaction Count Over Time')
+            st.plotly_chart(fig2)
+
+            # User Count over Time
+            query_user = f"""SELECT Year, Quarter, SUM(District_users) as User_count FROM map_user WHERE State = '{state_insight}' GROUP BY Year, Quarter"""
+            user_data = pd.read_sql_query(query_user, myconnection)
+            fig3 = px.line(user_data, x='Year', y='User_count', color='Quarter', title='User Count Over Time')
+            st.plotly_chart(fig3)
+
+        if answer == 2:
+            st.header("PhonePe Performance Over Period and in Different States")
+
+            st.write("### Assess PhonePe's growth and performance by examining transaction volumes and user registrations across different years and states.")
+
+            query = """SELECT State, Year, SUM(Transaction_amount) as Total_Transaction_Amount FROM agg_transaction GROUP BY State, Year"""
+            performance_data = pd.read_sql_query(query, myconnection)
+
+            fig = px.line(performance_data, x='Year', y='Total_Transaction_Amount', color='State', title='PhonePe Performance Over Period')
+            st.plotly_chart(fig)
+        
+        if answer == 3:
+            st.title("Relationship Between Transaction Amount, Registered Users, and Transaction Count")
+
+            st.write("### Explore the correlation between the transaction amounts, the number of registered users, and the total transaction count to understand user behavior.")
+            
+            query = """SELECT agg_transaction.State as State,SUM(agg_transaction.Transaction_amount) as Total_Transaction_Amount,SUM(agg_transaction.Transaction_count) as Total_Transaction_Count,SUM(map_user.District_users) as Total_Users
+FROM agg_transaction JOIN map_user ON agg_transaction.State = map_user.State GROUP BY agg_transaction.State """
+            dataFrame = pd.read_sql_query(query, myconnection)
+            
+            fig = px.scatter(dataFrame, x="Total_Users", y="Total_Transaction_Amount", size="Total_Transaction_Count", color="State",
+                            title="Relationship Between Users, Transaction Amount, and Transaction Count")
+            st.plotly_chart(fig)
+
+        if answer == 4:
+            st.header("Major Transactions Over the Year")
+
+            st.write("### Identify the most popular types of transactions (e.g., peer-to-peer payments, merchant payments) over different years.")
+
+            query = """SELECT Year, SUM(Transaction_amount) as Total_Transaction_Amount FROM agg_transaction GROUP BY Year"""
+            major_transactions = pd.read_sql_query(query, myconnection)
+
+            fig = px.bar(major_transactions, x='Year', y='Total_Transaction_Amount', title='Major Transactions Over the Year')
+            st.plotly_chart(fig)
+
+        if answer == 5:
+            st.header("Average Transactions Insights Over State")
+
+            st.write("### Compare the average transaction values, counts, and user registrations across various states to identify regional differences.")
+
+            query = """SELECT State, AVG(Transaction_amount) as Avg_Transaction_Amount FROM agg_transaction GROUP BY State"""
+            avg_transactions = pd.read_sql_query(query, myconnection)
+
+            fig = px.bar(avg_transactions, x='State', y='Avg_Transaction_Amount', title='Average Transaction Amount by State')
+            st.plotly_chart(fig)
+
+        if answer == 6:
+            st.header("States Transferring More Money")
+
+            st.write("### List and analyze the states with the highest total transaction amounts in a tabular format.")
+
+            query = """SELECT State, SUM(Transaction_amount) as Total_Transaction_Amount FROM agg_transaction GROUP BY State ORDER BY Total_Transaction_Amount DESC"""
+            state_transactions = pd.read_sql_query(query, myconnection)
+            st.table(state_transactions)
+
+        if answer == 7:
+            st.header("States with High and Low Transaction Amounts in a Transaction")
+
+            st.write("### Highlight the states with the highest and lowest average transaction amounts per transaction.")
+
+            query_high = """SELECT State, MAX(Transaction_amount) as Max_Transaction_Amount FROM agg_transaction GROUP BY State ORDER BY Max_Transaction_Amount DESC LIMIT 7"""
+            high_transactions = pd.read_sql_query(query_high, myconnection)
+            st.write("### States with Highest Transaction Amounts")
+            st.table(high_transactions)
+
+            query_low = """SELECT State, MIN(Transaction_amount) as Min_Transaction_Amount FROM agg_transaction GROUP BY State ORDER BY Min_Transaction_Amount ASC LIMIT 7"""
+            low_transactions = pd.read_sql_query(query_low, myconnection)
+            st.write("### States with Lowest Transaction Amounts")
+            st.table(low_transactions)
+
+        if answer == 8:
+            st.header("States with High and Low Transaction Amounts by a User")
+
+            st.write("### Focus on the states with the highest and lowest transaction amounts per user.")
+
+            query_high = """SELECT State, MAX(Transaction_amount) as Max_Transaction_Amount FROM agg_transaction GROUP BY State ORDER BY Max_Transaction_Amount DESC LIMIT 7"""
+            high_transactions = pd.read_sql_query(query_high, myconnection)
+            st.write("### States with Highest Transaction Amounts by a User")
+            st.table(high_transactions)
+
+            query_low = """SELECT State, MIN(Transaction_amount) as Min_Transaction_Amount FROM agg_transaction GROUP BY State ORDER BY Min_Transaction_Amount ASC LIMIT 7"""
+            low_transactions = pd.read_sql_query(query_low, myconnection)
+            st.write("### States with Lowest Transaction Amounts by a User")
+            st.table(low_transactions)
+
+        if answer == 9:
+            st.title("Trends in User Registrations Over the Years Across Different States")
+
+            st.write("### Examine the year-on-year growth in user registrations to identify states with the most significant increase in PhonePe adoption.")
+            
+            query = """SELECT State, Year, SUM(District_users) as User_Count FROM map_user GROUP BY State, Year"""
+            dataFrame = pd.read_sql_query(query, myconnection)
+            
+            fig = px.line(dataFrame, x="Year", y="User_Count", color="State", title="Year-on-Year Growth in User Registrations")
+            st.plotly_chart(fig)
+
+        if answer == 10:
+            st.title("Most Popular Mobile Brands Among PhonePe Users")
+
+            st.write("### Identify which mobile brands are most commonly used by PhonePe users and how they influence transaction behaviors.")
+            
+            query = """SELECT brand, SUM(brand_count) as Brand_Count FROM agg_user GROUP BY brand"""
+            dataFrame = pd.read_sql_query(query, myconnection)
+            
+            fig = px.pie(dataFrame, names="brand", values="Brand_Count", title="Popular Mobile Brands Among PhonePe Users")
+            st.plotly_chart(fig)
+
